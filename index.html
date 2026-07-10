@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Golfer of the Year — Live Scoring</title>
+<style>
+  :root{
+    --green-900:#0b3d2e;--green-800:#12513c;--green-700:#177a52;--green-600:#1f9d63;
+    --green-100:#e3f4ec;--gold:#c9a227;--gold-light:#f3e6b3;
+    --ink:#132a20;--muted:#5c6d64;--line:#dbe6df;--bg:#f4f8f5;--card:#fff;
+    --birdie:#d8ecff;--eagle:#ffd9ec;--bogey:#fdeede;--dbogey:#f7dcdc;
+    --shadow:0 1px 3px rgba(0,0,0,.08),0 6px 20px rgba(11,61,46,.06);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45}
+  .top{background:linear-gradient(135deg,var(--green-900),var(--green-700));color:#fff;padding:14px 18px;
+    display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:20;box-shadow:var(--shadow)}
+  .top .logo{font-size:22px}.top h1{font-size:16px;margin:0;font-weight:700}
+  .top .sub{font-size:12px;opacity:.85}.top .spacer{flex:1}
+  .top button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);
+    padding:6px 11px;border-radius:8px;font-size:13px;cursor:pointer}
+  main{max-width:780px;margin:0 auto;padding:16px 14px 96px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  h2{font-size:18px;margin:0 0 4px}.desc{color:var(--muted);font-size:13.5px;margin:0 0 14px}
+  label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+  input,select{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px;background:#fff;color:var(--ink)}
+  input:focus,select:focus{outline:none;border-color:var(--green-600);box-shadow:0 0 0 3px var(--green-100)}
+  .btn{background:var(--green-700);color:#fff;border:none;padding:13px 18px;border-radius:11px;font-size:16px;font-weight:700;cursor:pointer;width:100%}
+  .btn:active{transform:translateY(1px)}.btn.gold{background:var(--gold);color:#3a2f06}
+  .btn.ghost{background:#fff;color:var(--green-800);border:1px solid var(--line)}
+  .btn.sm{padding:8px 12px;font-size:13px;width:auto}
+  .row{display:flex;gap:10px}.row>*{flex:1}
+  .tabs{display:flex;gap:6px;margin-bottom:14px}
+  .tabs button{flex:1;padding:11px;border-radius:10px;border:1px solid var(--line);background:#fff;font-weight:700;color:var(--muted);cursor:pointer;font-size:14px}
+  .tabs button.active{background:var(--green-800);color:#fff;border-color:var(--green-800)}
+  .pill{display:inline-block;padding:2px 9px;border-radius:20px;font-size:12px;font-weight:700}
+  .pill.grn{background:var(--green-100);color:var(--green-800)}.pill.gold{background:var(--gold-light);color:#6b5410}
+  .muted{color:var(--muted)}.center{text-align:center}
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted)}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .rank{font-weight:800;color:var(--green-800)}
+  .flash{animation:fl 1.6s ease}@keyframes fl{0%{background:var(--gold-light)}100%{background:transparent}}
+  /* hole stepper */
+  .hole-big{display:flex;align-items:center;justify-content:space-between;margin:8px 0 14px}
+  .hole-big .h{font-size:15px;color:var(--muted);font-weight:700}
+  .stepper{display:flex;align-items:center;gap:16px;justify-content:center;margin:10px 0}
+  .stepper button{width:64px;height:64px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:30px;font-weight:800;color:var(--green-800);cursor:pointer}
+  .stepper .val{font-size:52px;font-weight:800;min-width:90px;text-align:center}
+  .nav-holes{display:flex;gap:8px;margin-top:8px}
+  .nav-holes button{flex:1;padding:12px;border-radius:11px;border:1px solid var(--line);background:#fff;font-weight:700;cursor:pointer}
+  .holegrid{display:grid;grid-template-columns:repeat(9,1fr);gap:5px;margin-top:12px}
+  .holegrid .hcell{border:1px solid var(--line);border-radius:8px;padding:5px 2px;text-align:center;font-size:12px;cursor:pointer}
+  .hcell.cur{border-color:var(--green-600);box-shadow:0 0 0 2px var(--green-100)}
+  .hcell .s{font-size:16px;font-weight:800}
+  .sc-eagle{background:var(--eagle)}.sc-birdie{background:var(--birdie)}.sc-bogey{background:var(--bogey)}.sc-dbogey{background:var(--dbogey)}
+  .saved{font-size:12px;color:var(--green-600);font-weight:700}
+  .who{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+  .who button{white-space:nowrap;padding:9px 13px;border-radius:20px;border:1px solid var(--line);background:#fff;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--muted)}
+  .who button.active{background:var(--green-700);color:#fff;border-color:var(--green-700)}
+  .banner{background:#fff4d6;border:1px solid #f0dca0;color:#7a5c00;border-radius:12px;padding:14px;font-size:14px;margin-bottom:16px}
+  .live-dot{width:9px;height:9px;border-radius:50%;background:#e74c3c;display:inline-block;margin-right:5px;animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+  .grp{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+  .team-line{display:flex;justify-content:space-between;padding:7px 9px;border-radius:8px;margin-top:6px;background:var(--green-100)}
+  .team-win{background:var(--gold-light);font-weight:700}
+  .copy{display:flex;gap:8px;align-items:center;background:var(--green-100);border-radius:10px;padding:10px 12px;font-size:13px;word-break:break-all}
+  a.link{color:var(--green-700);font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">🏌️</div>
+  <div><h1 id="topTitle">Golfer of the Year</h1><div class="sub" id="topSub">Live scoring</div></div>
+  <div class="spacer"></div>
+  <button id="homeBtn" onclick="goHome()" style="display:none">Home</button>
+</div>
+<main id="app"><div class="card center muted">Loading…</div></main>
+
+<!-- Supabase JS (v2, UMD) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   CONFIG — paste your Supabase project values here (see SETUP.md)
+   ============================================================ */
+const SUPABASE_URL      = "https://srmykgxyslnpaafcicsa.supabase.co";       // e.g. https://abcd1234.supabase.co
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNybXlrZ3h5c2xucGFhZmNpY3NhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTE3MDQsImV4cCI6MjA5ODQ4NzcwNH0.WWwelMPG7clLZIjcZIdPmi9wo8y1OdzTopnX7AA3WDE";  // the public anon key
+
+const configured = SUPABASE_URL.startsWith("http") && SUPABASE_ANON_KEY.length>20;
+const sb = configured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+
+/* ============================================================
+   Scoring helpers (match the offline app + verified logic)
+   ============================================================ */
+function strokesOnHole(handicap,si){const h=Math.max(0,Math.round(handicap||0));
+  return Math.floor(h/18)+((si<=(h%18))?1:0);}
+// WHS course handicap from a player's Handicap Index + the event's tee.
+//   Course Handicap = Index × (Slope / 113) + (Course Rating − Par)
+// Falls back to using the index as-is if the event has no rating/slope.
+function courseHandicap(index){
+  const t=S.tournament;if(!t)return Math.round(index||0);
+  const par=t.holes.reduce((a,h)=>a+h.par,0);
+  if(t.slope&&t.course_rating!=null&&t.course_rating!==''){
+    return Math.round((+index||0)*(t.slope/113)+(t.course_rating-par));
+  }
+  return Math.round(index||0);
+}
+// strokes a player receives on a hole, via their course handicap
+function pStrokes(p,si){return strokesOnHole(courseHandicap(p.handicap),si);}
+function esc(s){return(s+"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function toParStr(d){return d===0?"E":(d>0?"+"+d:""+d);}
+
+/* ============================================================
+   App state
+   ============================================================ */
+const S={tournament:null,players:[],scores:{},me:null,tab:'leaderboard',channel:null,curHole:1,entryPid:null,courses:[]};
+// Finish-position points for the season-long Golfer of the Year race
+const SEASON_POINTS=(()=>{const t={1:150,2:110,3:90,4:80,5:72,6:66,7:60,8:55,9:51,10:48};
+  let p=46;for(let i=11;i<=30;i++){t[i]=p;p-=2;}for(let i=31;i<=50;i++){t[i]=Math.max(2,p);p-=1;}return t;})();
+const seasonPts=pos=>SEASON_POINTS[pos]!=null?SEASON_POINTS[pos]:1;
+const app=()=>document.getElementById('app');
+const params=new URLSearchParams(location.search);
+
+/* score map key */
+const sk=(pid,hole)=>pid+"_"+hole;
+
+/* ---- boot ---- */
+async function boot(){
+  if(!configured){renderSetupNeeded();return;}
+  const code=params.get('e');
+  if(params.get('season')!==null){return renderSeason();}
+  if(params.get('admin')!==null){return renderAdminGate();}
+  if(!code){return renderHome();}
+  await loadEvent(code);
+}
+function goHome(){location.search="";}
+
+/* ============================================================
+   Data loading + realtime
+   ============================================================ */
+async function loadEvent(code){
+  app().innerHTML=`<div class="card center muted">Loading event…</div>`;
+  const {data:t,error}=await sb.from('tournaments').select('*').eq('code',code.toUpperCase()).maybeSingle();
+  if(error){return renderError(error.message);}
+  if(!t){return renderError('No event found for code "'+esc(code)+'".');}
+  S.tournament=t;
+  document.getElementById('topTitle').textContent=t.name;
+  document.getElementById('topSub').textContent=(t.course||'')+(t.status==='completed'?' · Final':' · Live');
+  document.getElementById('homeBtn').style.display='';
+  await refreshData();
+  subscribe();
+  // restore "me" for this event
+  const saved=localStorage.getItem('goty_me_'+t.id);
+  S.me=saved&&S.players.find(p=>p.id===saved)?saved:null;
+  S.entryPid=S.me;
+  render();
+}
+async function refreshData(){
+  const tid=S.tournament.id;
+  const [{data:players},{data:scores}]=await Promise.all([
+    sb.from('players').select('*').eq('tournament_id',tid).order('group_no',{nullsFirst:false}).order('name'),
+    sb.from('scores').select('*').eq('tournament_id',tid)
+  ]);
+  S.players=players||[];
+  S.scores={};(scores||[]).forEach(r=>{S.scores[sk(r.player_id,r.hole)]=r.strokes;});
+}
+function subscribe(){
+  if(S.channel)sb.removeChannel(S.channel);
+  const tid=S.tournament.id;
+  S.channel=sb.channel('ev_'+tid)
+    .on('postgres_changes',{event:'*',schema:'public',table:'scores',filter:'tournament_id=eq.'+tid},
+      payload=>{const r=payload.new||payload.old;if(!r)return;
+        if(payload.eventType==='DELETE')delete S.scores[sk(r.player_id,r.hole)];
+        else S.scores[sk(r.player_id,r.hole)]=r.strokes;
+        if(S.tab==='leaderboard')renderLeaderboardBody(true);
+        if(S.tab==='enter')renderHoleGrid();})
+    .on('postgres_changes',{event:'*',schema:'public',table:'players',filter:'tournament_id=eq.'+tid},
+      async()=>{await refreshData();render();})
+    .subscribe();
+}
+
+/* ============================================================
+   Leaderboard computation
+   ============================================================ */
+function holesArr(){return S.tournament.holes;}
+function playerLine(p){
+  const holes=holesArr();const fmt=S.tournament.format;
+  let gross=0,net=0,parPlayed=0,thru=0,last=0;
+  for(let i=0;i<18;i++){const v=S.scores[sk(p.id,i+1)];
+    if(v!=null){thru++;gross+=v;parPlayed+=holes[i].par;
+      net+=v-pStrokes(p,holes[i].si);}}
+  const useNet=fmt==='net';
+  const scoreVal=useNet?net:gross;
+  const relToPar=thru?scoreVal-parPlayed:0; // net/gross vs par of played holes
+  return {p,gross,net,thru,parPlayed,scoreVal,relToPar};
+}
+function leaderboard(){
+  const arr=S.players.map(playerLine).filter(x=>true);
+  arr.sort((a,b)=>{
+    if(a.thru===0&&b.thru===0)return a.p.name.localeCompare(b.p.name);
+    if(a.thru===0)return 1;if(b.thru===0)return -1;
+    return a.relToPar-b.relToPar || b.thru-a.thru || a.p.name.localeCompare(b.p.name);
+  });
+  // standard competition ranking on relToPar (only ranked if started)
+  let rank=0,prev=null,seen=0;
+  arr.forEach(x=>{if(x.thru===0){x.rank=null;return;}seen++;
+    if(prev===null||x.relToPar!==prev){rank=seen;prev=x.relToPar;}x.rank=rank;});
+  return arr;
+}
+
+/* ============================================================
+   Rendering — screens
+   ============================================================ */
+function render(){
+  const t=S.tournament;
+  let tabs=`<div class="tabs">
+    <button class="${S.tab==='leaderboard'?'active':''}" onclick="setTab('leaderboard')">🏆 Leaderboard</button>
+    <button class="${S.tab==='enter'?'active':''}" onclick="setTab('enter')">✏️ Enter Scores</button>
+    <button class="${S.tab==='teams'?'active':''}" onclick="setTab('teams')">👥 Fourballs</button></div>`;
+  let body='';
+  if(S.tab==='leaderboard')body=viewLeaderboard();
+  else if(S.tab==='enter')body=viewEnter();
+  else body=viewTeams();
+  app().innerHTML=tabs+body;
+  if(S.tab==='leaderboard')renderLeaderboardBody(false);
+  if(S.tab==='enter')renderHoleGrid();
+}
+function setTab(t){S.tab=t;render();}
+
+/* ---- Leaderboard ---- */
+function viewLeaderboard(){
+  const t=S.tournament;
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h2><span class="live-dot"></span>Live Leaderboard</h2>
+      <span class="pill grn">${t.format==='net'?'NET':'GROSS'}</span></div>
+    <p class="desc">${esc(t.course||'')} · par ${holesArr().reduce((a,h)=>a+h.par,0)} · updates automatically as scores are posted.</p>
+    <table><thead><tr><th>Pos</th><th>Player</th><th class="n">Thru</th><th class="n">${t.format==='net'?'Net':'Gross'}</th><th class="n">To Par</th></tr></thead>
+    <tbody id="lbBody"></tbody></table>
+    <p class="desc" style="margin-top:10px">Ranked by score to par through holes played. "To Par" is ${t.format==='net'?'net':'gross'} vs par of completed holes.</p>
+    <p class="center" style="margin-top:6px"><a class="link" href="?season">🏆 Season Golfer of the Year standings →</a></p></div>`;
+}
+function renderLeaderboardBody(flash){
+  const body=document.getElementById('lbBody');if(!body)return;
+  const arr=leaderboard();
+  body.innerHTML=arr.map(x=>{
+    const rel=x.thru?toParStr(x.relToPar):'—';
+    const started=x.thru>0;
+    return `<tr class="${flash?'flash':''}">
+      <td class="rank">${started?x.rank:'–'}</td>
+      <td><strong>${esc(x.p.name)}</strong> <span class="muted" style="font-size:11px">idx ${x.p.handicap} · CH ${courseHandicap(x.p.handicap)}${x.p.group_no?' · Grp '+x.p.group_no:''}</span></td>
+      <td class="n">${started?(x.thru===18?'F':x.thru):'—'}</td>
+      <td class="n">${started?(S.tournament.format==='net'?x.net:x.gross):'—'}</td>
+      <td class="n" style="font-weight:800">${rel}</td></tr>`;
+  }).join('')||`<tr><td colspan="5" class="center muted">No players yet.</td></tr>`;
+}
+
+/* ---- Enter scores ---- */
+function viewEnter(){
+  const t=S.tournament;
+  if(!S.players.length)return `<div class="card center muted">No players in this event yet. Ask the organizer to add the field.</div>`;
+  if(!S.me){return pickMe();}
+  // who can I enter for?
+  const meP=S.players.find(p=>p.id===S.me);
+  let field=[meP];
+  if(t.scoring_mode!=='self'){
+    const mates=S.players.filter(p=>p.group_no!=null&&meP.group_no!=null&&p.group_no===meP.group_no);
+    field=mates.length?mates:[meP];
+  }
+  if(!field.find(p=>p.id===S.entryPid))S.entryPid=S.me;
+  const whoTabs=field.length>1?`<div class="who">${field.map(p=>
+    `<button class="${S.entryPid===p.id?'active':''}" onclick="setEntry('${p.id}')">${esc(p.name.split(' ')[0])}${p.id===S.me?' (you)':''}</button>`).join('')}</div>`:'';
+  const modeNote=t.scoring_mode==='self'?'You are entering your own card.':
+    t.scoring_mode==='group'?'Group scoring: enter cards for your fourball.':'Enter your card, or tap a groupmate to score for them.';
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Enter Scores</h2><button class="btn ghost sm" onclick="changeMe()">Not you?</button></div>
+    <p class="desc">${modeNote}</p>
+    ${whoTabs}
+    <div id="entryArea"></div></div>`;
+}
+function pickMe(){
+  const opts=S.players.slice().sort((a,b)=>a.name.localeCompare(b.name))
+    .map(p=>`<option value="${p.id}">${esc(p.name)} (${p.handicap})${p.group_no?' · Grp '+p.group_no:''}</option>`).join('');
+  return `<div class="card"><h2>Who are you?</h2>
+    <p class="desc">Pick your name to start scoring. We'll remember you on this phone for this event.</p>
+    <label>Your name</label><select id="mePick"><option value="">Select…</option>${opts}</select>
+    <div style="height:12px"></div><button class="btn" onclick="confirmMe()">Start scoring</button></div>`;
+}
+function confirmMe(){const v=document.getElementById('mePick').value;if(!v){alert('Please select your name.');return;}
+  S.me=v;S.entryPid=v;localStorage.setItem('goty_me_'+S.tournament.id,v);render();}
+function changeMe(){localStorage.removeItem('goty_me_'+S.tournament.id);S.me=null;render();}
+function setEntry(pid){S.entryPid=pid;render();}
+
+function renderHoleGrid(){
+  const area=document.getElementById('entryArea');if(!area)return;
+  const p=S.players.find(x=>x.id===S.entryPid);if(!p)return;
+  const holes=holesArr();const h=S.curHole;const hole=holes[h-1];
+  const cur=S.scores[sk(p.id,h)];
+  let gross=0,thru=0;for(let i=0;i<18;i++){const v=S.scores[sk(p.id,i+1)];if(v!=null){gross+=v;thru++;}}
+  const parThru=(()=>{let s=0;for(let i=0;i<18;i++)if(S.scores[sk(p.id,i+1)]!=null)s+=holes[i].par;return s;})();
+  const stk=pStrokes(p,hole.si);
+  const grid=(a,b)=>{let s='';for(let i=a;i<b;i++){const v=S.scores[sk(p.id,i+1)];const par=holes[i].par;
+    let cls='';if(v!=null){const d=v-par;cls=d<=-2?'sc-eagle':d===-1?'sc-birdie':d===1?'sc-bogey':d>=2?'sc-dbogey':'';}
+    s+=`<div class="hcell ${i+1===h?'cur':''} ${cls}" onclick="gotoHole(${i+1})">
+      <div class="muted">${i+1}</div><div class="s">${v!=null?v:'·'}</div><div class="muted" style="font-size:10px">p${par}</div></div>`;}
+    return s;};
+  const val=cur!=null?cur:hole.par;
+  area.innerHTML=`
+    <div class="hole-big"><span class="h">Hole ${h} · Par ${hole.par} · S.I. ${hole.si}</span>
+      <span class="saved" id="savedFlag"></span></div>
+    <div class="stepper">
+      <button onclick="bump(-1)">−</button>
+      <div class="val" id="scoreVal">${val}</div>
+      <button onclick="bump(1)">＋</button></div>
+    <div class="center muted" style="font-size:13px">${cur!=null?('Saved: '+cur+(S.tournament.format==='net'?(' · net '+(cur-stk)+' ('+stk+' stroke'+(stk!==1?'s':'')+')'):'')):'Tap ＋/− then Save'}</div>
+    <div class="nav-holes">
+      <button onclick="prevHole()">‹ Prev</button>
+      <button class="btn" style="flex:2" onclick="saveHole()">Save hole ${h}</button>
+      <button onclick="nextHole()">Next ›</button></div>
+    <div style="margin-top:14px;display:flex;justify-content:space-between;font-size:14px">
+      <span class="muted">Thru <strong>${thru}</strong></span>
+      <span class="muted">Gross <strong>${gross||'–'}</strong> ${thru?('('+toParStr(gross-parThru)+')'):''}</span></div>
+    <div class="holegrid">${grid(0,9)}</div>
+    <div class="holegrid" style="margin-top:5px">${grid(9,18)}</div>`;
+}
+let pendingVal=null;
+function bump(d){const el=document.getElementById('scoreVal');let v=parseInt(el.textContent)||holesArr()[S.curHole-1].par;
+  v=Math.max(1,Math.min(20,v+d));el.textContent=v;pendingVal=v;}
+function gotoHole(h){S.curHole=h;pendingVal=null;renderHoleGrid();}
+function prevHole(){if(S.curHole>1){S.curHole--;pendingVal=null;renderHoleGrid();}}
+function nextHole(){if(S.curHole<18){S.curHole++;pendingVal=null;renderHoleGrid();}}
+async function saveHole(){
+  const p=S.players.find(x=>x.id===S.entryPid);const h=S.curHole;
+  const el=document.getElementById('scoreVal');const v=parseInt(el.textContent);
+  if(isNaN(v)){return;}
+  S.scores[sk(p.id,h)]=v; // optimistic
+  const flag=document.getElementById('savedFlag');if(flag)flag.textContent='Saving…';
+  const {error}=await sb.from('scores').upsert(
+    {tournament_id:S.tournament.id,player_id:p.id,hole:h,strokes:v},
+    {onConflict:'player_id,hole'});
+  if(flag)flag.textContent=error?'⚠ retry':'Saved ✓';
+  if(error){console.error(error);}
+  if(S.curHole<18){setTimeout(()=>{S.curHole++;pendingVal=null;renderHoleGrid();},250);}
+  else renderHoleGrid();
+}
+
+/* ---- Fourball / best-ball teams ---- */
+function bestBallNet(members){
+  const holes=holesArr();let total=0,thru=0;
+  for(let i=0;i<18;i++){let best=null;
+    members.forEach(p=>{const v=S.scores[sk(p.id,i+1)];if(v==null)return;
+      const net=v-pStrokes(p,holes[i].si);if(best==null||net<best)best=net;});
+    if(best!=null){total+=best;thru++;}}
+  let par=0;for(let i=0;i<18;i++){const any=members.some(p=>S.scores[sk(p.id,i+1)]!=null);if(any)par+=holes[i].par;}
+  return thru?{total,thru,rel:total-par}:null;
+}
+function viewTeams(){
+  const groups={};S.players.forEach(p=>{if(p.group_no==null)return;(groups[p.group_no]=groups[p.group_no]||[]).push(p);});
+  const keys=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  if(!keys.length)return `<div class="card center muted">No fourball groups set for this event.</div>`;
+  let html='';
+  keys.forEach(k=>{const gp=groups[k];
+    const t1=gp.filter(p=>p.team_no===1),t2=gp.filter(p=>p.team_no===2);
+    html+=`<div class="grp"><strong>Group ${k}</strong> <span class="muted" style="font-size:12px">· ${gp.map(p=>esc(p.name.split(' ').slice(-1)[0])).join(', ')}</span>`;
+    if(t1.length&&t2.length){
+      const b1=bestBallNet(t1),b2=bestBallNet(t2);
+      const nm=t=>t.map(p=>esc(p.name.split(' ').slice(-1)[0])).join(' / ');
+      let win=-1;if(b1&&b2)win=b1.rel<b2.rel?0:b2.rel<b1.rel?1:-1;
+      [[t1,b1,0],[t2,b2,1]].forEach(([t,b,i])=>{
+        html+=`<div class="team-line ${win===i?'team-win':''}"><span>${win===i?'🏅 ':''}${nm(t)}</span>
+          <span>${b?('net '+toParStr(b.rel)+' · thru '+b.thru):'—'}</span></div>`;});
+    }else{html+=`<div class="muted" style="font-size:12.5px;margin-top:6px">Teams not set (need team 1 & 2).</div>`;}
+    html+=`</div>`;});
+  return `<div class="card"><h2>Fourball Best-Ball</h2>
+    <p class="desc">Lower partner's net counts on each hole. Updates live.</p>${html}</div>`;
+}
+
+/* ============================================================
+   Home / setup / errors
+   ============================================================ */
+function renderHome(){
+  document.getElementById('homeBtn').style.display='none';
+  app().innerHTML=`<div class="card">
+    <h2>Enter your event code</h2>
+    <p class="desc">Your organizer shares a code or a link for each tournament. Enter it to start scoring and see the live leaderboard.</p>
+    <label>Event code</label><input id="codeIn" placeholder="e.g. JULY26" autocapitalize="characters" style="text-transform:uppercase">
+    <div style="height:12px"></div><button class="btn" onclick="joinByCode()">Go to event</button>
+    <div style="height:16px"></div>
+    <p class="center"><a class="link" href="?season">🏆 Golfer of the Year standings</a></p>
+    <p class="center"><a class="link" href="?admin">Organizer? Manage events &amp; courses →</a></p></div>`;
+}
+function joinByCode(){const c=document.getElementById('codeIn').value.trim();if(!c)return;location.search='?e='+encodeURIComponent(c.toUpperCase());}
+function renderError(msg){document.getElementById('homeBtn').style.display='';
+  app().innerHTML=`<div class="card center"><h2>Hmm.</h2><p class="desc">${esc(msg)}</p>
+    <button class="btn ghost" onclick="goHome()">Back to home</button></div>`;}
+function renderSetupNeeded(){
+  app().innerHTML=`<div class="card"><div class="banner">⚙️ Not connected yet. Paste your Supabase URL = "https://srmykgxyslnpaafcicsa.supabase.co"; and anon key into the CONFIG section at the top of <strong>index.html</strong>, then reload. See <strong>SETUP.md</strong> for the 10-minute walkthrough.</div>
+  <h2>Golfer of the Year — Live Scoring</h2>
+  <p class="desc">Once connected, this page lets 100 members log scores hole-by-hole from their phones during a round, with a shared leaderboard that updates in real time. Players join with a link or event code — no accounts to manage.</p></div>`;
+}
+
+/* ============================================================
+   Admin
+   ============================================================ */
+function renderAdminGate(){
+  document.getElementById('homeBtn').style.display='';
+  app().innerHTML=`<div class="card"><h2>Organizer sign-in</h2>
+    <p class="desc">Enter an event code and its admin PIN to manage it, or create a new event.</p>
+    <label>Event code</label><input id="aCode" placeholder="JULY26" style="text-transform:uppercase">
+    <div style="height:10px"></div><label>Admin PIN</label><input id="aPin" placeholder="PIN" inputmode="numeric">
+    <div style="height:12px"></div><button class="btn" onclick="adminOpen()">Manage event</button>
+    <div style="height:14px"></div><button class="btn gold" onclick="renderCreate()">+ Create new event</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="renderCourses()">🏌️ Manage course library</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="location.search='?season'">🏆 Season standings</button></div>`;
+}
+async function adminOpen(){
+  const code=document.getElementById('aCode').value.trim().toUpperCase();const pin=document.getElementById('aPin').value.trim();
+  if(!code){alert('Enter event code');return;}
+  const {data:t}=await sb.from('tournaments').select('*').eq('code',code).maybeSingle();
+  if(!t){alert('No event with that code');return;}
+  if((t.admin_pin||'')!==pin){alert('Wrong PIN');return;}
+  S.tournament=t;await refreshData();renderAdmin();
+}
+function defaultHolesJSON(){
+  const par=[4,4,5,4,3,4,5,3,4,4,3,4,5,4,4,3,4,5],si=[7,3,11,1,17,13,5,15,9,8,4,12,2,18,14,6,16,10];
+  return par.map((p,i)=>({par:p,si:si[i]}));
+}
+async function loadCourses(){
+  const {data}=await sb.from('courses').select('*, tees(*)').order('name');
+  S.courses=data||[];
+}
+async function renderCreate(){
+  await loadCourses();
+  const courseOpts=S.courses.map(c=>`<option value="${c.id}">${esc(c.name)}${c.location?' — '+esc(c.location):''}</option>`).join('');
+  app().innerHTML=`<div class="card"><h2>Create event</h2>
+    <label>Event name</label><input id="cName" placeholder="July Monthly">
+    <div class="row" style="margin-top:10px"><div><label>Share code</label><input id="cCode" placeholder="JULY26" style="text-transform:uppercase"></div>
+    <div><label>Admin PIN</label><input id="cPin" placeholder="4-digit" inputmode="numeric"></div></div>
+    <div style="margin-top:10px"><label>Course</label>
+      <select id="cCourse" onchange="onCoursePick()">
+        <option value="">— Par 72 default (no saved course) —</option>${courseOpts}</select></div>
+    <div style="margin-top:10px" id="teeWrap"><label>Tee</label>
+      <select id="cTee"><option value="">(pick a course first)</option></select></div>
+    <div class="row" style="margin-top:10px"><div><label>Date</label><input id="cDate" type="date"></div>
+      <div><label>Leaderboard</label><select id="cFmt"><option value="net">Net (handicap)</option><option value="gross">Gross</option></select></div></div>
+    <div style="margin-top:10px"><label>Scoring mode</label><select id="cMode"><option value="either">Either (self or group)</option>
+      <option value="self">Self only</option><option value="group">Group scorer</option></select></div>
+    <p class="desc" style="margin-top:10px">Pick a saved course + tee to auto-load par, stroke index, rating &amp; slope. No course yet? <a class="link" onclick="renderCourses()">Manage courses →</a></p>
+    <button class="btn" onclick="createEvent()">Create event</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="location.search='?admin'">Cancel</button></div>`;
+}
+function onCoursePick(){
+  const cid=document.getElementById('cCourse').value;const c=S.courses.find(x=>x.id===cid);
+  const teeSel=document.getElementById('cTee');
+  if(!c||!c.tees||!c.tees.length){teeSel.innerHTML='<option value="">(no tees — using par 72)</option>';return;}
+  teeSel.innerHTML=c.tees.map(t=>`<option value="${t.id}">${esc(t.name)} · CR ${t.rating??'–'} / Slope ${t.slope??'–'} · par ${t.par}</option>`).join('');
+}
+async function createEvent(){
+  const name=document.getElementById('cName').value.trim(),code=document.getElementById('cCode').value.trim().toUpperCase();
+  if(!name||!code){alert('Name and code required');return;}
+  const rec={name,code,admin_pin:document.getElementById('cPin').value.trim()||'0000',
+    event_date:document.getElementById('cDate').value||null,
+    scoring_mode:document.getElementById('cMode').value,format:document.getElementById('cFmt').value};
+  const cid=document.getElementById('cCourse').value;const c=S.courses.find(x=>x.id===cid);
+  const tid=document.getElementById('cTee').value;const tee=c&&c.tees?c.tees.find(x=>x.id===tid):null;
+  if(tee){ // snapshot from saved tee
+    rec.course_id=c.id;rec.tee_id=tee.id;rec.course=c.name;rec.location=c.location;
+    rec.tee_name=tee.name;rec.course_rating=tee.rating;rec.slope=tee.slope;rec.holes=tee.holes;
+  }else if(c){ rec.course_id=c.id;rec.course=c.name;rec.location=c.location;rec.holes=defaultHolesJSON(); }
+  else { rec.course='Par 72 course';rec.holes=defaultHolesJSON(); }
+  const {data,error}=await sb.from('tournaments').insert(rec).select().maybeSingle();
+  if(error){alert('Error: '+error.message+(error.message.includes('duplicate')?' (code already used)':''));return;}
+  S.tournament=data;await refreshData();renderAdmin();
+}
+function renderAdmin(){
+  const t=S.tournament;const link=location.origin+location.pathname+'?e='+t.code;
+  app().innerHTML=`<div class="card">
+    <h2>${esc(t.name)} <span class="pill grn">${t.code}</span></h2>
+    <p class="desc">${esc(t.course||'')} · ${t.scoring_mode} scoring · ${t.format} leaderboard · ${t.status}</p>
+    <label>Share this link with players</label>
+    <div class="copy"><span id="shareLink">${esc(link)}</span></div>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm" onclick="copyLink('${esc(link)}')">Copy link</button>
+      <button class="btn ghost sm" onclick="location.search='?e='+encodeURIComponent('${t.code}')">Open as player</button></div>
+  </div>
+  <div class="card"><h2>Field (${S.players.length})</h2>
+    <p class="desc">Paste names to add players. Format per line: <em>Name, handicap</em> (handicap optional).</p>
+    <textarea id="rosterBox" rows="5" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px" placeholder="Rory McIlroy, 2&#10;Jon Rahm, 3"></textarea>
+    <div class="row" style="margin-top:8px">
+      <button class="btn sm" onclick="addRoster()">Add players</button>
+      <button class="btn ghost sm" onclick="drawFourballs()">🎲 Draw fourballs</button></div>
+    <div style="margin-top:12px">${S.players.map(p=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line)">
+      <span>${esc(p.name)} <span class="muted" style="font-size:12px">${p.handicap} hcp${p.group_no?' · Grp '+p.group_no+(p.team_no?' T'+p.team_no:''):''}</span></span>
+      <button class="btn ghost sm" onclick="delPlayer('${p.id}')">✕</button></div>`).join('')||'<span class="muted">No players yet.</span>'}</div>
+  </div>
+  <div class="card"><h2>Event controls</h2>
+    <div class="row"><button class="btn ghost sm" onclick="toggleStatus()">${t.status==='live'?'Mark completed':'Reopen event'}</button>
+    <button class="btn ghost sm" onclick="location.search='?admin'">Switch event</button></div></div>`;
+}
+function copyLink(l){navigator.clipboard&&navigator.clipboard.writeText(l);const el=document.getElementById('shareLink');if(el)el.textContent=l+'  ✓ copied';}
+async function addRoster(){
+  const lines=document.getElementById('rosterBox').value.split('\n').map(l=>l.trim()).filter(Boolean);
+  const rows=lines.map(l=>{const parts=l.split(',');const name=parts[0].trim();
+    const h=parts[1]?Math.round(parseFloat(parts[1])||0):0;return {tournament_id:S.tournament.id,name,handicap:h};}).filter(r=>r.name);
+  if(!rows.length)return;
+  const {error}=await sb.from('players').insert(rows);
+  if(error){alert('Error: '+error.message);return;}
+  await refreshData();renderAdmin();
+}
+async function delPlayer(id){if(!confirm('Remove player?'))return;
+  await sb.from('players').delete().eq('id',id);await refreshData();renderAdmin();}
+async function drawFourballs(){
+  const ids=S.players.map(p=>p.id).sort(()=>Math.random()-.5);
+  const updates=[];ids.forEach((id,idx)=>{const g=Math.floor(idx/4)+1;const within=idx%4;
+    updates.push({id,group_no:g,team_no:within<2?1:2});});
+  for(const u of updates){await sb.from('players').update({group_no:u.group_no,team_no:u.team_no}).eq('id',u.id);}
+  await refreshData();renderAdmin();
+}
+async function toggleStatus(){const ns=S.tournament.status==='live'?'completed':'live';
+  await sb.from('tournaments').update({status:ns}).eq('id',S.tournament.id);
+  S.tournament.status=ns;renderAdmin();}
+
+/* ============================================================
+   COURSE LIBRARY (admin) — save once, reuse for any event
+   ============================================================ */
+async function renderCourses(){
+  await loadCourses();
+  document.getElementById('homeBtn').style.display='';
+  let list=S.courses.map(c=>{
+    const tees=(c.tees||[]).map(t=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">
+      <span>${esc(t.name)} <span class="muted" style="font-size:12px">· CR ${t.rating??'–'} / Slope ${t.slope??'–'} · par ${t.par}</span></span>
+      <span><button class="btn ghost sm" onclick="renderTeeEditor('${c.id}','${t.id}')">Edit</button>
+      <button class="btn ghost sm" onclick="delTee('${t.id}')">✕</button></span></div>`).join('')
+      ||'<span class="muted" style="font-size:13px">No tees yet.</span>';
+    return `<div class="grp"><div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>${esc(c.name)}</strong> <button class="btn ghost sm" onclick="delCourse('${c.id}')">Delete course</button></div>
+      <div class="muted" style="font-size:12.5px;margin-bottom:6px">${esc(c.location||'')}</div>
+      ${tees}
+      <div style="height:8px"></div><button class="btn ghost sm" onclick="renderTeeEditor('${c.id}')">+ Add tee</button></div>`;
+  }).join('')||'<p class="muted">No courses saved yet. Add your first below.</p>';
+  app().innerHTML=`<div class="card"><h2>Course Library</h2>
+    <p class="desc">Save each course once with its tees (rating &amp; slope), then just pick it when you create an event.</p>
+    ${list}
+    <div style="height:14px"></div>
+    <h2 style="font-size:16px">Add a course</h2>
+    <div class="row"><div><label>Course name</label><input id="ncName" placeholder="Pinehurst No. 2"></div>
+      <div><label>Location</label><input id="ncLoc" placeholder="Pinehurst, NC"></div></div>
+    <div style="height:10px"></div><button class="btn" onclick="createCourse()">Add course</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="location.search='?admin'">← Back</button></div>`;
+}
+async function createCourse(){
+  const name=document.getElementById('ncName').value.trim();if(!name){alert('Course name required');return;}
+  const {data,error}=await sb.from('courses').insert({name,location:document.getElementById('ncLoc').value.trim()}).select().maybeSingle();
+  if(error){alert(error.message);return;}
+  renderTeeEditor(data.id); // go straight to adding a tee
+}
+async function delCourse(id){if(!confirm('Delete this course and its tees? Past events keep their own copy.'))return;
+  await sb.from('courses').delete().eq('id',id);renderCourses();}
+async function delTee(id){if(!confirm('Delete this tee?'))return;await sb.from('tees').delete().eq('id',id);renderCourses();}
+
+async function renderTeeEditor(courseId,teeId){
+  await loadCourses();
+  const c=S.courses.find(x=>x.id===courseId);
+  const tee=teeId&&c?(c.tees||[]).find(t=>t.id===teeId):null;
+  const holes=tee?tee.holes:defaultHolesJSON();
+  const rows=(a,b)=>{let s='';for(let i=a;i<b;i++)s+=`<tr><td class="rank">${i+1}</td>
+    <td class="n"><input id="tp${i}" type="number" value="${holes[i].par}" style="width:60px;padding:7px"></td>
+    <td class="n"><input id="ts${i}" type="number" value="${holes[i].si}" style="width:60px;padding:7px"></td>
+    <td class="n"><input id="ty${i}" type="number" value="${holes[i].yards||''}" style="width:70px;padding:7px" placeholder="yds"></td></tr>`;return s;};
+  document.getElementById('homeBtn').style.display='';
+  app().innerHTML=`<div class="card"><h2>${tee?'Edit tee':'Add tee'} — ${esc(c?c.name:'')}</h2>
+    <div class="row"><div><label>Tee name</label><input id="tName" value="${tee?esc(tee.name):''}" placeholder="Blue"></div>
+      <div><label>Course rating</label><input id="tRating" type="number" step="0.1" value="${tee&&tee.rating!=null?tee.rating:''}" placeholder="72.4"></div>
+      <div><label>Slope</label><input id="tSlope" type="number" value="${tee&&tee.slope!=null?tee.slope:''}" placeholder="131"></div></div>
+    <p class="desc" style="margin-top:12px">Par, stroke index (S.I.) and yardage per hole. Total par updates on save.</p>
+    <div style="overflow-x:auto"><table><thead><tr><th>Hole</th><th class="n">Par</th><th class="n">S.I.</th><th class="n">Yards</th></tr></thead>
+      <tbody>${rows(0,9)}<tr><td colspan="4" style="height:6px"></td></tr>${rows(9,18)}</tbody></table></div>
+    <div style="height:12px"></div><button class="btn" onclick="saveTee('${courseId}','${teeId||''}')">Save tee</button>
+    <div style="height:8px"></div><button class="btn ghost" onclick="renderCourses()">← Back to courses</button></div>`;
+}
+async function saveTee(courseId,teeId){
+  const name=document.getElementById('tName').value.trim();if(!name){alert('Tee name required');return;}
+  const holes=[];for(let i=0;i<18;i++){holes.push({par:+document.getElementById('tp'+i).value||4,
+    si:+document.getElementById('ts'+i).value||(i+1),yards:+document.getElementById('ty'+i).value||undefined});}
+  const par=holes.reduce((a,h)=>a+h.par,0);
+  const rating=document.getElementById('tRating').value;const slope=document.getElementById('tSlope').value;
+  const rec={course_id:courseId,name,par,holes,
+    rating:rating===''?null:+rating,slope:slope===''?null:+slope};
+  let error;
+  if(teeId){({error}=await sb.from('tees').update(rec).eq('id',teeId));}
+  else{({error}=await sb.from('tees').insert(rec));}
+  if(error){alert(error.message);return;}
+  renderCourses();
+}
+
+/* ============================================================
+   SEASON-LONG GOLFER OF THE YEAR (aggregates all completed events)
+   ============================================================ */
+async function renderSeason(){
+  document.getElementById('homeBtn').style.display='';
+  document.getElementById('topTitle').textContent='Golfer of the Year';
+  document.getElementById('topSub').textContent='Season standings';
+  app().innerHTML=`<div class="card center muted">Crunching the season…</div>`;
+  // pull all completed events, then their players + scores
+  const {data:tours}=await sb.from('tournaments').select('*').eq('status','completed').order('event_date');
+  if(!tours||!tours.length){app().innerHTML=`<div class="card center"><h2>No results yet</h2>
+    <p class="desc">Season standings appear once events are marked completed.</p>
+    <button class="btn ghost" onclick="goHome()">Home</button></div>`;return;}
+  const ids=tours.map(t=>t.id);
+  const [{data:players},{data:scores}]=await Promise.all([
+    sb.from('players').select('*').in('tournament_id',ids),
+    sb.from('scores').select('*').in('tournament_id',ids)
+  ]);
+  const standings=computeSeason(tours,players||[],scores||[]);
+  const eventChips=tours.map(t=>`<span class="pill grn" style="margin:2px">${esc(t.name)}</span>`).join(' ');
+  let rows=standings.map(s=>`<tr><td class="rank">${s.rank<=3?['🥇','🥈','🥉'][s.rank-1]:''} ${s.rank}</td>
+    <td><strong>${esc(s.name)}</strong></td><td class="n"><span class="pill gold">${s.points}</span></td>
+    <td class="n">${s.played}</td><td class="n">${s.wins}</td><td class="n">${s.best?('T'+s.best).replace('T1','1'):'—'}</td></tr>`).join('');
+  app().innerHTML=`<div class="card">
+    <h2>🏆 Golfer of the Year — Season Standings</h2>
+    <p class="desc">Finish-position points across ${tours.length} completed event${tours.length>1?'s':''}. Players matched by name.</p>
+    <div style="margin-bottom:10px">${eventChips}</div>
+    <table><thead><tr><th>Rank</th><th>Player</th><th class="n">Points</th><th class="n">Played</th><th class="n">Wins</th><th class="n">Best</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="6" class="center muted">No scored players yet.</td></tr>'}</tbody></table>
+    <div style="height:12px"></div><button class="btn ghost" onclick="goHome()">Home</button></div>`;
+}
+function computeSeason(tours,players,scores){
+  // index scores by player
+  const byPlayer={};scores.forEach(s=>{(byPlayer[s.player_id]=byPlayer[s.player_id]||[]).push(s);});
+  const agg={}; // key: lowercased name
+  tours.forEach(t=>{
+    const holes=t.holes;const fmt=t.format;const par=holes.reduce((a,h)=>a+h.par,0);
+    const chFor=idx=>{if(t.slope&&t.course_rating!=null)return Math.round((+idx||0)*(t.slope/113)+(t.course_rating-par));return Math.round(idx||0);};
+    // compute each player's total (net or gross) for this event
+    const field=players.filter(p=>p.tournament_id===t.id).map(p=>{
+      const sc=(byPlayer[p.id]||[]);let gross=0,net=0,thru=0;
+      sc.forEach(r=>{if(r.strokes==null)return;const hole=holes[r.hole-1];if(!hole)return;thru++;gross+=r.strokes;
+        net+=r.strokes-strokesOnHoleRaw(chFor(p.handicap),hole.si);});
+      return {name:p.name,total:fmt==='gross'?gross:net,thru};
+    }).filter(x=>x.thru>0);
+    if(!field.length)return;
+    field.sort((a,b)=>a.total-b.total);
+    // finish-position points with ties (average)
+    let i=0;while(i<field.length){let j=i;while(j+1<field.length&&field[j+1].total===field[i].total)j++;
+      let sum=0;for(let pos=i+1;pos<=j+1;pos++)sum+=seasonPts(pos);const avg=+(sum/(j-i+1)).toFixed(2);
+      for(let k=i;k<=j;k++){field[k].position=i+1;field[k].points=avg;}i=j+1;}
+    field.forEach(f=>{const key=f.name.toLowerCase();
+      const a=agg[key]||(agg[key]={name:f.name,points:0,played:0,wins:0,best:null});
+      a.points+=f.points;a.played++;if(f.position===1)a.wins++;if(a.best===null||f.position<a.best)a.best=f.position;});
+  });
+  const arr=Object.values(agg);arr.forEach(a=>a.points=+a.points.toFixed(2));
+  arr.sort((a,b)=>b.points-a.points||a.name.localeCompare(b.name));
+  arr.forEach((a,i)=>a.rank=i+1);return arr;
+}
+// standalone (no S dependency) stroke allocation, for season aggregation
+function strokesOnHoleRaw(courseHcp,si){const h=Math.max(0,Math.round(courseHcp||0));
+  return Math.floor(h/18)+((si<=(h%18))?1:0);}
+
+/* expose for inline handlers already global (non-module script) */
+/* build: v3 — course library + season standings */
+boot();
+</script>
+</body>
+</html>
